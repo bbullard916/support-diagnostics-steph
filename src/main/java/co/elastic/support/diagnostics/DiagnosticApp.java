@@ -42,7 +42,10 @@ public class DiagnosticApp {
                     SystemUtils.quitApp();
                 }
             }
-
+            if (!isElasticsearchClusterAvailable(diagnosticInputs.getElasticsearchUrl())) {
+                logger.error(Constants.CONSOLE, "Cannot connect to Elasticsearch cluster. Please check the connection and try again.");
+                SystemUtils.quitApp();
+            }
             Map diagMap = JsonYamlUtils.readYamlFromClasspath(Constants.DIAG_CONFIG, true);
             DiagConfig diagConfig = new DiagConfig(diagMap);
             DiagnosticService diag = new DiagnosticService();
@@ -54,6 +57,21 @@ public class DiagnosticApp {
         } catch (Exception e) {
             logger.error(Constants.CONSOLE,"FATAL ERROR occurred: {}. {}", e.getMessage(), Constants.CHECK_LOG, e);
         }
+
+    private static boolean isElasticsearchClusterAvailable(String elasticsearchUrl) {
+        try {
+            URL url = new URL(elasticsearchUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.connect();
+
+            int responseCode = connection.getResponseCode();
+            return responseCode == 200;
+        } catch (Exception e) {
+            logger.error("Error checking Elasticsearch cluster status: {}", e.getMessage());
+            return false;
+        }
+    }
     }
 
 
